@@ -8,6 +8,7 @@ import 'material-design-icons-iconfont/dist/material-design-icons.css'
 import usePub from './utils/pub-use.ts'
 
 
+
 const app = createApp(App)
 
 app.use(router).use(request).use(usePub).use(store)

@@ -2,8 +2,9 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 
 import { store } from "@/store";
 import request from '../api/Request';
-import uuid from '@/api/webGl'
-import {getUUID} from '@/api/webGl'
+import {getCanvasUUID} from '../api/Request';
+export const domain='json.ipv6plus.cn';
+//import {getUUID} from '@/api/webGl'
 export const Layout = () => import('@/layout/index.vue');
 
 
@@ -75,30 +76,44 @@ const router  = createRouter({
 router.beforeEach((to, from, next) => {
     // 1. 每个条件执行后都要跟上 next() 或 使用路由跳转 api 否则页面就会停留一动不动
     // 2. 要合理的搭配条件语句，避免出现路由死循环。
-    const token = localStorage.getItem("uuid");
+    let uuid = localStorage.getItem("uuid");
+    
     if(to.meta.requireAuth){
-        if (token) {
-          request.post('/api/smv/',{uuid:''}, function(res){
-                 if(res){
-                    if(res.checkUUID=='Y'){
-                       
-                        next() 
-                    }else{//如果校验没通过
-                       console.log('验证没通过');
-                       // router.push('/');
-                        next('/401') 
-                    }
-                 }
-                  
-                    //next({path:to}) 
-           })
-       if(Object.is(to.path,'/401') || Object.is(to.path,'/404' ||Object.is(to.path,'/405'))){
-             next();
-       }
-    }else {//不放行，跳转到loading页面
-       
-        next('/401') 
-    }
+   
+          if(Object.is(to.path,'/401') || Object.is(to.path,'/404' ||Object.is(to.path,'/405'))){
+            
+            next();
+          }else{
+            var jsonParam={"ip_addr":uuid,"domain":"","bulk":"false"}
+            request.post('/api/smv/',jsonParam, function(res){
+                if(res){
+                   if(res.checkUUID=='Y'){
+                       next() 
+                   }else{//如果校验没通过
+                      console.log('验证没通过');
+                       next('/401') 
+                   }
+                }
+          })
+          if(!uuid){
+            uuid=getCanvasUUID(domain);
+            localStorage.setItem("uuid",uuid);
+            next();
+        }else{
+            var localUUID=getCanvasUUID(domain);
+            if(localUUID && localUUID!=uuid){
+                //router.next('/401');x
+                if(document.getElementById('app')){
+                    
+                    document.getElementById('msg401')?.append('客户端发生了变化');
+
+                }
+                next('/401');
+                
+            }
+        }
+          } 
+
     }
 })
 // 重置路由

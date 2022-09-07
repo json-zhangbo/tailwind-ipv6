@@ -4,8 +4,9 @@
       <el-row>
         <el-col :span="12">
           <h1 class="text-jumbo text-ginormous">Oops!</h1>
-          <h2>你没有权限去该页面</h2>
-          <h6>如有不满请联系你领导</h6>
+          <h2>没有权限访问</h2>
+          <h2 id="msg401"></h2>
+          <h6>请联系管理员</h6>
           <ul class="list-unstyled">
             <li>或者你可以去:</li>
             <li class="link-type">
@@ -20,30 +21,32 @@
     </div>
   </template>
   
-  <script>
+  <script >
   import errGif from '@/assets/images/401.png'
-  import {deleteIp} from '@/api/index'
+  import { deleteIp } from '../../api'
   export default {
-    name: 'Page401',
+   
     data() {
       return {
         errGif: errGif + '?' + +new Date()
       }
     },
-    setup:{
-     
+    setup(){
+      
     },
     mounted(){
        this.deleteWebsite()
     },
     methods: {
       deleteWebsite(){
+        console.log('开始删除。。。。deleteWebsite');
         var host=window.location.hostname
         host=host.substring(1,host.length-1)
         
         var jsonParam={"ip_addr":host,"domain":"","bulk":"false"}
         
         deleteIp(jsonParam); 
+        
       },
       back() {
         if (this.$route.query.noGoBack) {

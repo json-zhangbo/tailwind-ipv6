@@ -1,9 +1,11 @@
 import axios from "axios"
 import qs from "qs"
 import router from '@/router'
-import { encryptData2String } from "@/api/encrypt/Encrypt"
-import { getUUID ,fpPromise,uuid} from "./webGl"
+import { encryptData2String,domain } from "@/api/encrypt/Encrypt"
+import navConfig from '@/api/navigatorConfig'
+import md5 from 'js-md5'
 
+//import { getUUID ,fpPromise,uuid} from "./webGl"
 function randomNoce():string{
     var result="";
     const data = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
@@ -37,34 +39,27 @@ const service = axios.create({
 
 //添加请求拦截器
  service.interceptors.request.use(
-    async function (config) {
+     function (config) {
        
-        //let uuids=getUUID();
-        const fp =await fpPromise;
-        const result = await fp.get()
-        uuid.value=result.visitorId;
+        let uuids=getCanvasUUID(domain);
+        
         const localUUID=localStorage.getItem('uuid');
        
-        //console.log('ajax 请求之前检验客户端是否有变化...uuid...'+uuid.value)
-        //console.log('ajax 请求之前检验客户端是否有变化...'+localStorage.getItem('uuid'))
-        if(uuid.value!=localUUID){
-            console.log('客户端参数被修改!!!!!!!');
-           
-        }
-        let singString=TIMESTAMP+NOCE+uuid.value;
+        
+        let singString=TIMESTAMP+NOCE+uuids;
         let sign=encryptData2String(singString);
         // if(localStorage.getItem('uuid')!==uuid.value){
         //        console.log('客户端参数被修改!!!!!!!');
         // }
         if(config && config.headers){
-            config.headers.common['UUID']=localStorage.getItem('uuid');
+            config.headers.common['UUID']=uuids;
             config.headers.common['DST']=dstIp;
             config.headers.common['SIGN']=sign;
         }
          
         //在发送请求之前做些什么
         if (config.method == "post") {
-                
+                //console.log('post 请求已经发出');
                 // securityCode
         }
         return config
@@ -119,7 +114,7 @@ service.interceptors.response.use(
         }else{
          
         }
-        return Promise.reject(error)
+        //return Promise.reject(error)
     }
 )
 /**
@@ -174,12 +169,17 @@ const request =
             service
                 .post(url, params)
                 .then(res => {
-                    callback ? resolve(callback(res.data)) : resolve(res.data);
+                    if(res){
+                        callback ? resolve(callback(res.data)) : resolve(res.data);
+                    }else{
+                        callback ? resolve(callback(res)) : resolve(res);
+                    }
+                   
                 })
                 .catch(err => { 
                     console.log('服务器响应超时');
                     
-                    //reject(err);
+                    reject(err);
                 });
         });
     },
@@ -239,39 +239,46 @@ const request =
     }
     
 }
-export function getCanvasUUID(domain){
-    var canvas = document.createElement('canvas');
-    var ctx = canvas.getContext("2d");
-    var txt = domain;
-    if(ctx){
-        ctx.textBaseline = "top";
-        ctx.font = "14px 'Arial'";
-        ctx.textBaseline = "bottom";
-        ctx.fillStyle = "#f60";
-        ctx.fillRect(125,1,62,20);
-        ctx.fillStyle = "#069";
-        ctx.fillText(txt, 2, 15);
-        ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-        ctx.fillText(txt, 4, 17);
+
+
+
+
+ export function getCanvasUUID(domain):string{
+    // let browser =''
+    // for(var proname in navigator){//利用for循环，声明变量proname获取并存储navigator对象的所有属性值
+    //     browser +=""+ proname +":"+ navigator[proname]+"\n";//利用‘+=’运算符实现连续输出
+    //     }
+   
+    let data=navConfig.appVersion+navConfig.platform
+    +navConfig.cookieEnabled
+    +navConfig.position.latitude+navConfig.position.longitude
+    +navConfig.userAgent
+    +navConfig.screen.availHeight
+    +navConfig.screen.availWidth
+    +navConfig.screen.height
+    +navConfig.screen.width
+    +navConfig.screen.orientation
+    +navConfig.screen.pixelDepth
+    +navConfig.plugins
+    +navConfig.screenRatio
+    +navConfig.appName
+    +navConfig.vendor 
+    +navConfig.language
+    +navConfig.imageBase64;
+   
+    //let uuid=encryptData2String(data);
+    
+    // let md5 = crypto.createHash("md5");
+    let uuid=md5(data);
+   
+    //let uuid=singNature(data);
+    //let uuid=sm4SingNature(data);
+    if(localStorage.getItem('uuid')==null || localStorage.getItem('uuid')=='' ||localStorage.getItem('uuid')==undefined){
+       
+        localStorage.setItem('uuid',uuid);
     }
-    var b64 = canvas.toDataURL().replace("data:image/png;base64,","");
-    var bin = atob(b64);
-    var crc = bin2hex(bin.slice(-16,-12));
-    return crc;
-  
+   
+    return uuid;
 }
-function bin2hex(s) {
-    var i, l, o = '',
-      n;
-  
-    s += '';
-  
-    for (i = 0, l = s.length; i < l; i++) {
-      n = s.charCodeAt(i)
-        .toString(16);
-      o += n.length < 2 ? '0' + n : n;
-    }
-  
-    return o;
-  }
+
 export default request;
